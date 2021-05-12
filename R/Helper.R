@@ -2,58 +2,45 @@
 
 #' @title Argument check
 #'
-#' @usage CreateArgCheck(missing = NULL, match = NULL, acceptable = NULL,
-#' null = NULL)
+#' @usage CheckArguments(env)
 #'
-#' @description \code{CreateArgCheck} creates tests for argument correctness.
+#' @description \code{CheckArguments} tests for argument correctness.
 #'
-#' @param missing named list; logical. Name corresponds to variable name, and
-#' corresponding entry to whether it was missing from the function call.
-#' @param match named list. Name corresponds to variable name, and corresponding
-#' entry to its value.
-#' @param acceptable named list. Name corresponds to variable name, and
-#' corresponding entry to its acceptable values.
-#' @param null named list; logical. Name corresponds to variable name, and
-#' corresponding entry to whether it was NULL in the function call.
+#' @param env environment where variables to test are located.
 #'
-#' @return argument check object.
+#' @return collection of all messages.
 #'
-CreateArgCheck <- function(missing = NULL, match = NULL, acceptable = NULL,
-    null = NULL) {
+CheckArguments <- function(env) {
 
-    Check <- ArgumentCheck::newArgCheck()
+    initial_check <- checkmate::checkEnvironment(env, contains = c("data","sce",
+        "drop_thre","labels","tr.length","bulk","train.ratio","mask.ratio",
+        "folds","scale","pseudocount","cell.clusters","cores","do","type",
+        "net.implementation","write","train.only"), null.ok = TRUE)
+    if(initial_check != TRUE)
+        return(initial_check)
 
-    # errors for missing arguments
-    if (!is.null(missing)) {
-        for (varname in names(missing)) {
-            if (missing[[varname]]) {
-                ArgumentCheck::addError(paste("A value for ", varname,
-                    " was not provided", sep = "'"), Check)
-            }
-        }
-    }
+    checks <- checkmate::makeAssertCollection()
 
-    # errors for arguments outside of predefined options
-    if (!(is.null(match)) & !(is.null(acceptable))) {
-        for (varname in names(match)) {
-            if (!(match[[varname]] %in% acceptable[[varname]]))
-                ArgumentCheck::addError(paste(NULL, varname, " must be one of ",
-                    paste(acceptable[[varname]], collapse = "', '"), NULL,
-                    sep = "'"), Check)
-        }
-    }
+    sapply(c("train.ratio","mask.ratio","folds","scale","pseudocount",
+        "cell.clusters","cores"), function(x)
+            checkmate::assertNumber(get(x, env), add = checks, null.ok = FALSE))
 
-    # errors for NULL arguments
-    if (!is.null(null)) {
-        for (varname in names(null)) {
-            if (null[[varname]]) {
-                ArgumentCheck::addError(paste(NULL, varname,
-                    " must have non-NULL value", sep = "'"), Check)
-            }
-        }
-    }
+    sapply(c("train.ratio","mask.ratio"),
+        function(x) checkmate::assertNumeric(get(x, env), lower = 0,
+                upper = 1, add = checks, null.ok = FALSE))
 
-    return(Check)
+    sapply(c("do","type","net.implementation"), function(x)
+        checkmate::assertCharacter(get(x, env), add = checks, null.ok = FALSE))
+
+    checkmate::assertChoice(get("type", envir = env),
+        choices = c("count","tpm"), add = checks, null.ok = FALSE)
+    checkmate::assertChoice(get("net.implementation"),
+        choices = c("iteration","pseudoinv"), add = checks, null.ok = FALSE)
+
+    sapply(c("write","train.only"), function(x)
+        checkmate::assertLogical(get(x, env), add = checks, null.ok = FALSE))
+
+    return(checkmate::reportAssertions(checks))
 }
 
 

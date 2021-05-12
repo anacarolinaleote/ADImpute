@@ -113,10 +113,7 @@ EvaluateMethods <- function(data, sce = NULL, do = c("Baseline", "DrImpute",
         DataCheck_SingleCellExperiment(sce)
         data <- SingleCellExperiment::normcounts(sce)
     }
-    Check <- CreateArgCheck(missing = list(data = missing(data)),
-        match = list(type = type), acceptable = list(type = c("TPM", "count")),
-        null = list(net.coef = is.null(net.coef), data = is.null(data))) # ADD ARGUMENT CHECK FOR MASK AND SPLIT RATIO
-    ArgumentCheck::finishArgCheck(Check)
+    CheckArguments(environment())
     data <- DataCheck_Matrix(data)
     tr.length <- DataCheck_TrLength(tr.length)
 
@@ -292,10 +289,7 @@ Impute <- function(data, sce = NULL, do = "Ensemble", write = FALSE,
         data <- SingleCellExperiment::normcounts(sce)
         method.choice <- stats::na.omit(
             SingleCellExperiment::int_elementMetadata(sce)$ADImpute$method) }
-    check <- CreateArgCheck(missing = list(data = missing(data)),
-        match = list(type = type), acceptable = list(type = c("TPM", "count")),
-        null = list(net.coef = is.null(net.coef), data = is.null(data)))
-    ArgumentCheck::finishArgCheck(check)
+    CheckArguments(environment())
     CheckArguments_Impute(data, method.choice, do, tr.length, labels,
         cell.clusters, true.zero.thr, drop_thre)
     data <- DataCheck_Matrix(data); tr.length <- DataCheck_TrLength(tr.length)
